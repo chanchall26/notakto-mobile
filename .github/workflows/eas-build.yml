@@ -57,15 +57,15 @@ jobs:
         run: npm ci
 
       - name: Build on EAS
-        # The EXPO_PUBLIC_FIREBASE_* values are read from the matching profile
-        # in eas.json (SECRET REQUIRED HERE). Prefer EAS environment variables
-        # / secrets (eas env:create) over committing real values to eas.json.
+        # Waits for the build to finish, so this job fails if the EAS build fails.
+        # The EXPO_PUBLIC_FIREBASE_* values come from the EAS environment that
+        # matches the profile (SECRET REQUIRED HERE: create them with
+        # `eas env:create`, see docs/testing.md).
         run: >-
           npx eas-cli build
           --platform ${{ inputs.platform }}
           --profile ${{ inputs.profile }}
           --non-interactive
-          --no-wait
         env:
           # SECRET REQUIRED HERE: same EXPO_TOKEN as above, used by eas-cli.
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

@@ -83,6 +83,7 @@ Any failing step fails the check. To block merging on failures, enable branch pr
 `.github/workflows/eas-build.yml` builds the app on [EAS Build](https://docs.expo.dev/build/introduction/).
 It runs only when started by hand (Actions tab, "EAS Build", "Run workflow") and asks for a
 platform (`android`, `ios`, `all`) and a profile (`development`, `preview`, `production`).
+The job waits for the EAS build to finish, so a failed build shows up as a failed run.
 It does not run on pull requests, so it does not use EAS quota by accident.
 
 Build profiles are defined in `eas.json`:
@@ -95,22 +96,39 @@ Build profiles are defined in `eas.json`:
 
 ### Required secrets (SECRET REQUIRED HERE)
 
-Nothing is committed with real values. The maintainers need to add:
+Nothing is committed with real values. Each profile in `eas.json` sets `environment`
+(`development`, `preview`, `production`), so EAS injects the variables stored in the EAS
+environment with the same name. Do not add these variables to a profile's `env` object in
+`eas.json`: profile `env` takes priority over EAS environment variables and would override them.
 
-| Where                                   | Name                                   | Used for                                    |
-| --------------------------------------- | -------------------------------------- | ------------------------------------------- |
-| GitHub Actions secret                   | `EXPO_TOKEN`                           | Lets the workflow log in to Expo/EAS        |
-| `eas.json` env or EAS env variables     | `EXPO_PUBLIC_FIREBASE_API_KEY`         | Firebase config read in `src/lib/firebase.ts` |
-| same                                    | `EXPO_PUBLIC_FIREBASE_APP_ID`          | same                                        |
-| same                                    | `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`     | same                                        |
-| same                                    | `EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID`  | same                                        |
-| same                                    | `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | same                                    |
-| same                                    | `EXPO_PUBLIC_FIREBASE_PROJECT_ID`      | same                                        |
-| same                                    | `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`  | same                                        |
-| same                                    | `EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID`   | Google Sign-In                              |
+| Where                  | Name                                       | Used for                                      |
+| ---------------------- | ------------------------------------------ | --------------------------------------------- |
+| GitHub Actions secret  | `EXPO_TOKEN`                               | Lets the workflow log in to Expo/EAS          |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_API_KEY`             | Firebase config read in `src/lib/firebase.ts` |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_APP_ID`              | same                                          |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`         | same                                          |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID`      | same                                          |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | same                                          |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_PROJECT_ID`          | same                                          |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`      | same                                          |
+| EAS environment vars   | `EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID`       | Google Sign-In                                |
 
-The values in `eas.json` are the placeholder text `SECRET REQUIRED HERE`. Replace them with real
-values, or better, create them with `eas env:create` so they stay out of the repository.
+#### Quick test setup with dummy values
+
+To try the workflow before the real Firebase values are available, paste this (bash) after
+`eas init`. The values are dummies, so the build will succeed but sign-in will not work.
+Re-run with real values (or `eas env:update`) before a real release.
+
+```bash
+for env in development preview production; do
+  for name in API_KEY APP_ID AUTH_DOMAIN MEASUREMENT_ID MESSAGING_SENDER_ID               PROJECT_ID STORAGE_BUCKET WEB_CLIENT_ID; do
+    npx eas-cli env:create --name "EXPO_PUBLIC_FIREBASE_$name"       --value "SECRET REQUIRED HERE" --environment "$env"       --visibility plaintext --non-interactive --force
+  done
+done
+```
+
+`EXPO_PUBLIC_*` values are bundled into the app, so they use `plaintext` visibility.
+Check what is set with `npx eas-cli env:list preview`.
 
 One-time setup for the maintainers:
 
@@ -119,7 +137,8 @@ One-time setup for the maintainers:
 2. Run `eas init` once to link the project to your Expo account (this adds the project ID to
    `app.json`).
 3. Set `ios.bundleIdentifier` and `android.package` in `app.json` (needed for store builds).
-4. Fill in the Firebase values as described above.
+4. Create the Firebase EAS environment variables as described above (dummy values are fine for
+   a first test run).
 
 ### Release flow
 
