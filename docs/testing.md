@@ -121,14 +121,18 @@ Re-run with real values (or `eas env:update`) before a real release.
 
 ```bash
 for env in development preview production; do
-  for name in API_KEY APP_ID AUTH_DOMAIN MEASUREMENT_ID MESSAGING_SENDER_ID               PROJECT_ID STORAGE_BUCKET WEB_CLIENT_ID; do
-    npx eas-cli env:create --name "EXPO_PUBLIC_FIREBASE_$name"       --value "SECRET REQUIRED HERE" --environment "$env"       --visibility plaintext --non-interactive --force
+  for name in API_KEY APP_ID AUTH_DOMAIN MEASUREMENT_ID MESSAGING_SENDER_ID PROJECT_ID STORAGE_BUCKET WEB_CLIENT_ID; do
+    npx eas-cli env:create --name "EXPO_PUBLIC_FIREBASE_$name" --value "SECRET REQUIRED HERE" \
+      --environment "$env" --visibility plaintext --non-interactive --force
   done
 done
 ```
 
 `EXPO_PUBLIC_*` values are bundled into the app, so they use `plaintext` visibility.
 Check what is set with `npx eas-cli env:list preview`.
+
+`.env.example` in the repo root lists the same variables (plus `EXPO_TOKEN` as a comment) with
+placeholders. Copy it to `.env` to run the app locally; `.env` is gitignored.
 
 One-time setup for the maintainers:
 
